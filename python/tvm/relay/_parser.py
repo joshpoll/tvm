@@ -151,7 +151,7 @@ class ParseTreeToRelayIR(RelayVisitor):
             return var
 
         # data types
-        elif node_type == RelayLexer.INT:
+        elif node_type == RelayLexer.NAT:
             return int(node_text)
         elif node_type == RelayLexer.FLOAT:
             return float(node_text)
@@ -209,9 +209,9 @@ class ParseTreeToRelayIR(RelayVisitor):
         # type: (RelayParser.ScalarFloatContext) -> expr.Constant
         return expr.const(self.visit(ctx.FLOAT()))
 
-    def visitScalarInt(self, ctx):
-        # type: (RelayParser.ScalarIntContext) -> expr.Constant
-        return expr.const(self.visit(ctx.INT()))
+    def visitScalarNat(self, ctx):
+        # type: (RelayParser.ScalarNatContext) -> expr.Constant
+        return expr.const(self.visit(ctx.NAT()))
 
     def visitScalarBool(self, ctx):
         # type: (RelayParser.ScalarBoolContext) -> expr.Constant
