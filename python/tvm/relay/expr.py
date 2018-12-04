@@ -222,12 +222,13 @@ class Function(Expr):
                  params,
                  body,
                  ret_type=None,
-                 type_params=None):
+                 type_params=None,
+                 attrs=None):
         if type_params is None:
             type_params = convert([])
 
         self.__init_handle_by_constructor__(
-            _make.Function, params, body, ret_type, type_params)
+            _make.Function, params, body, ret_type, type_params, attrs)
 
     def __call__(self, *args):
         """Invoke the gobal function.

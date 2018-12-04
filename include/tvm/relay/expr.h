@@ -252,7 +252,7 @@ class FunctionNode : public ExprNode {
                                Expr body,
                                Type ret_type,
                                tvm::Array<TypeVar> ty_params,
-                               tvm::Attrs attrs = Attrs());
+                               tvm::Attrs attrs);
 
   static constexpr const char* _type_key = "relay.Function";
   TVM_DECLARE_NODE_TYPE_INFO(FunctionNode, ExprNode);

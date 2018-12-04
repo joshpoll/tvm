@@ -756,7 +756,7 @@ class FuseMutator : private ExprMutator {
 
   Expr MakeNewFunction(GraphPartitioner::Group* group, Type ret_type, Expr body) {
     const GroupInfo& ginfo = ginfo_[group];
-    auto func = FunctionNode::make(ginfo.params, body, ret_type, {});
+    auto func = FunctionNode::make(ginfo.params, body, ret_type, {}, Attrs());
     func = FunctionSetAttr(func, "Primitive", tvm::Integer(1));
     return CallNode::make(func, ginfo.arguments, Attrs());
   }

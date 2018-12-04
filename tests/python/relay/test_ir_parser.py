@@ -274,6 +274,7 @@ def test_func():
 def test_defn():
     id_defn = relay.fromtext(
         """
+        0.0.1
         def @id(%x: int32) -> int32 {
             %x
         }

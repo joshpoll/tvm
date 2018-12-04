@@ -172,7 +172,7 @@ TVM_REGISTER_NODE_TYPE(FunctionNode);
 
 TVM_REGISTER_API("relay._make.Function")
 .set_body([](TVMArgs args, TVMRetValue* ret) {
-  *ret = FunctionNode::make(args[0], args[1], args[2], args[3]);
+  *ret = FunctionNode::make(args[0], args[1], args[2], args[3], args[4]);
 });
 
 TVM_STATIC_IR_FUNCTOR_REGISTER(IRPrinter, vtable)

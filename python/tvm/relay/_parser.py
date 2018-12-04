@@ -6,12 +6,13 @@ from __future__ import absolute_import
 import sys
 
 from collections import deque
-from typing import TypeVar, Deque, Tuple, Optional, Union, NamedTuple, List, Callable, Any
+from typing import TypeVar, Deque, Tuple, Optional, Union, NamedTuple, List, Callable, Any, Dict
 
 from . import module
 from . import expr
 from . import ty
 from . import op
+from . import base
 
 class ParseError(Exception):
     """Exception type for parse errors."""
@@ -284,15 +285,32 @@ class ParseTreeToRelayIR(RelayVisitor):
         # type: (RelayParser.VarListContext) -> List[expr.Var]
         return self.visit_list(ctx.var())
 
+    # TODO: support larger class of values than just Relay exprs
+    def visitAttr(self, ctx):
+        # type: (RelayParser.AttrContext) -> Tuple[str, base.NodeBase]
+        return (ctx.CNAME().getText(), self.visit(ctx.expr()))
+
+    def visitAttrList(self, ctx):
+        # type: (RelayParser.AttrListContext) -> Dict[str, base.NodeBase]
+        return dict(self.visit_list(ctx.attr()))
+
+    def visitArgList(self, ctx):
+        # type: (RelayParser.ArgListContext) -> Tuple[Optional[List[expr.Var]], Optional[Dict[str, base.NodeBase]]]
+
+        var_list = self.visit(ctx.varList()) if ctx.varList() else None
+        attr_list = self.visit(ctx.attrList()) if ctx.attrList() else None
+
+        return (var_list, attr_list)
+
     def mk_func(self, ctx):
-        # type: (Union[RelayParser.FuncContext, RelayParser.DefnContext]) -> Function
+        # type: (Union[RelayParser.FuncContext, RelayParser.DefnContext]) -> expr.Function
         """Construct a function from either a Func or Defn."""
 
         # Enter var scope early to put params in scope.
         self.enter_var_scope()
         # Capture type params in params.
         self.enter_type_param_scope()
-        var_list = self.visit(ctx.varList())
+        var_list, attr_list = self.visit(ctx.argList())
         ret_type = self.getType_(ctx.type_())
 
         type_params = list(self.exit_type_param_scope())
@@ -302,7 +320,7 @@ class ParseTreeToRelayIR(RelayVisitor):
         body = self.visit(ctx.body())
         self.exit_var_scope()
 
-        return expr.Function(var_list, body, ret_type, type_params) # type: ignore
+        return expr.Function(var_list, body, ret_type, type_params, attr_list) # type: ignore
 
     def visitFunc(self, ctx):
         # type: (RelayParser.FuncContext) -> expr.Function
