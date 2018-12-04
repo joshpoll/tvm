@@ -23,6 +23,7 @@ NE: '!=' ;
 opIdent: CNAME ;
 GLOBAL_VAR: '@' CNAME ;
 LOCAL_VAR: '%' CNAME ;
+TEMP_VAR: '%' NAT CNAME? ;
 
 MUT: 'mut' ;
 
@@ -80,7 +81,7 @@ expr
   | expr ';' expr                             # seq
 
   // mutable update
-  // | ident '=' expr                            # writeRef
+  // | ident ':=' expr                            # writeRef
   // | expr '^'                                  # readRef
 
   | ident                                     # identExpr
@@ -154,4 +155,5 @@ ident
   : opIdent
   | GLOBAL_VAR
   | LOCAL_VAR
+  | TEMP_VAR
   ;

@@ -183,6 +183,15 @@ def test_let():
         )
     )
 
+    assert alpha_equal(
+        relay.fromtext("let %0 = 1; ()"),
+        relay.Let(
+            relay.Var("0"),
+            relay.const(1),
+            UNIT
+        )
+    )
+
 @if_parser_enabled
 def test_seq():
     assert alpha_equal(
@@ -265,6 +274,29 @@ def test_func():
             X_ANNO,
             int32,
             []
+        )
+    )
+
+    # attrs
+    assert alpha_equal(
+        relay.fromtext("fn (foo=1) { 1 }"),
+        relay.Function(
+            [],
+            relay.const(1),
+            None,
+            [],
+            {"foo": 1}
+        )
+    )
+
+    assert alpha_equal(
+        relay.fromtext("fn (%x, foo=1) { %x }"),
+        relay.Function(
+            [X_ANNO],
+            X_ANNO,
+            int32,
+            [],
+            {"foo": 1}
         )
     )
 

@@ -142,7 +142,7 @@ class ParseTreeToRelayIR(RelayVisitor):
         # variables
         if node_type == RelayLexer.GLOBAL_VAR:
             return expr.GlobalVar(node_text[1:])
-        elif node_type == RelayLexer.LOCAL_VAR:
+        elif node_type in [RelayLexer.LOCAL_VAR, RelayLexer.TEMP_VAR]:
             name = node_text[1:]
             var = lookup(self.var_scopes, name)
             if var is None:
@@ -243,8 +243,11 @@ class ParseTreeToRelayIR(RelayVisitor):
             ident = "_"
             type_ = None
         else:
-            local_var = ctx.var().ident().LOCAL_VAR()
-            if local_var is None:
+            if ctx.var().ident().LOCAL_VAR() is not None:
+                local_var = ctx.var().ident().LOCAL_VAR()
+            elif ctx.var().ident().TEMP_VAR() is not None:
+                local_var = ctx.var().ident().TEMP_VAR()
+            else:
                 raise ParseError('Only local ids may be used in `let`s.')
             ident = local_var.getText()[1:]
             type_ = self.getType_(ctx.var().type_())
@@ -272,9 +275,11 @@ class ParseTreeToRelayIR(RelayVisitor):
 
     def visitVar(self, ctx):
         # type: (RelayParser.VarContext) -> expr.Var
-        ident = ctx.ident().LOCAL_VAR()
-
-        if ident is None:
+        if ctx.ident().LOCAL_VAR() is not None:
+            ident = ctx.ident().LOCAL_VAR()
+        elif ctx.ident().TEMP_VAR() is not None:
+            ident = ctx.ident().TEMP_VAR()
+        else:
             raise ParseError('Only local ids may be used in params.')
 
         type_ = self.getType_(ctx.type_())
