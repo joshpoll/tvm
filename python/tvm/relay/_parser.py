@@ -243,12 +243,10 @@ class ParseTreeToRelayIR(RelayVisitor):
             ident = "_"
             type_ = None
         else:
-            if ctx.var().ident().LOCAL_VAR() is not None:
-                local_var = ctx.var().ident().LOCAL_VAR()
-            elif ctx.var().ident().TEMP_VAR() is not None:
-                local_var = ctx.var().ident().TEMP_VAR()
-            else:
+            local_var = ctx.var().ident().LOCAL_VAR() or ctx.var().ident().TEMP_VAR()
+            if local_var is None:
                 raise ParseError('Only local ids may be used in `let`s.')
+
             ident = local_var.getText()[1:]
             type_ = self.getType_(ctx.var().type_())
 
@@ -275,11 +273,8 @@ class ParseTreeToRelayIR(RelayVisitor):
 
     def visitVar(self, ctx):
         # type: (RelayParser.VarContext) -> expr.Var
-        if ctx.ident().LOCAL_VAR() is not None:
-            ident = ctx.ident().LOCAL_VAR()
-        elif ctx.ident().TEMP_VAR() is not None:
-            ident = ctx.ident().TEMP_VAR()
-        else:
+        ident = ctx.ident().LOCAL_VAR() or ctx.ident().TEMP_VAR()
+        if ident is None:
             raise ParseError('Only local ids may be used in params.')
 
         type_ = self.getType_(ctx.type_())
