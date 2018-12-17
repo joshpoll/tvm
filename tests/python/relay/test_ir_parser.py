@@ -223,6 +223,11 @@ def test_tuple():
     assert alpha_equal(relay.fromtext("(0, 1, 2)"), relay.Tuple([relay.const(0), relay.const(1), relay.const(2)]))
 
 @if_parser_enabled
+def test_tuple_getitem():
+    assert alpha_equal(relay.fromtext("(0, 1).0"),
+    relay.TupleGetItem(relay.Tuple([relay.const(0), relay.const(1)]), 0))
+
+@if_parser_enabled
 def test_func():
     # 0 args
     assert alpha_equal(

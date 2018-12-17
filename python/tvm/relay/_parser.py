@@ -230,6 +230,10 @@ class ParseTreeToRelayIR(RelayVisitor):
         tup = self.visit_list(ctx.expr())
         return expr.Tuple(tup)
 
+    def visitProject(self, ctx):
+        # type: (RelayParser.ProjectContext) -> expr.TupleGetItem
+        return expr.TupleGetItem(self.visit(ctx.expr()), self.visit(ctx.INT()))
+
     # Currently doesn't support mutable sequencing.
     def visitSeq(self, ctx):
         # type: (RelayParser.SeqContext) -> expr.Let

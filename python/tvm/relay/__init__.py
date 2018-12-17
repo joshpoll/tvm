@@ -53,6 +53,10 @@ Let = expr.Let
 If = expr.If
 TupleGetItem = expr.TupleGetItem
 
+Env = expr.Env
+Envs = expr.Envs
+ExprEnvFunctor = expr.ExprEnvFunctor
+
 # helper functions
 var = expr.var
 const = expr.const

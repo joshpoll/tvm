@@ -19,7 +19,7 @@ namespace relay {
 /*
   Note on Fusing algorithm:
 
-  The main challenge of genenral fusor is to handle possible diamond shape branches,
+  The main challenge of general fusor is to handle possible diamond shape branches,
   in the following graph, conv2d can be fused to elemwise add.
 
             conv2d
@@ -31,7 +31,7 @@ namespace relay {
           elemwise add
                |
 
-  However, at the point of conv2d we do not necessarily know that all its future path
+  However, at the point of conv2d we do not necessarily know that all its future paths
   will merge at the elemwise add. The new fusor algorithm applies post-dominator analysis.
   The immediate post-dominator of a node defined by the closest node where all the future path goes into.
   In the above case, the elemwise add is the post-dominator of conv2d. The general algorithm is as follows:
@@ -795,8 +795,8 @@ class FuseMutator : private ExprMutator {
 
 Expr FuseOps(const Expr& expr, int fuse_opt_level) {
   // First we convert all chains of fusable ops into
-  // abstracted functions which we mark as primtive
-  // then we convert these primtive functions into
+  // abstracted functions which we mark as primitive
+  // then we convert these primitive functions into
   // new operators.
   return FuseMutator().Transform(expr, fuse_opt_level);
 }

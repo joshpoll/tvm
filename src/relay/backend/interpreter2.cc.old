@@ -6,12 +6,13 @@
 #include <tvm/packed_func_ext.h>
 #include <tvm/runtime/device_api.h>
 #include <tvm/relay/expr_functor.h>
-#include <tvm/relay/interpreter.h>
+#include <tvm/relay/interpreter2.h>
 #include <tvm/relay/pass.h>
 #include "compile_engine.h"
 
 namespace tvm {
 namespace relay {
+namespace jmp {
 
 using namespace runtime;
 
@@ -22,21 +23,20 @@ inline const PackedFunc& GetPackedFunc(const std::string& name) {
 }
 
 /* Value Implementation */
-Closure ClosureNode::make(tvm::Map<Var, Value> env, Function func) {
+Closure ClosureNode::make(std::function<Value(Value)> func) {
   NodePtr<ClosureNode> n = make_node<ClosureNode>();
-  n->env = std::move(env);
   n->func = std::move(func);
   return Closure(n);
 }
 
 TVM_REGISTER_API("relay._make.Closure")
 .set_body([](TVMArgs args, TVMRetValue* ret) {
-    *ret = ClosureNode::make(args[0], args[1]);
+    *ret = ClosureNode::make(args[0]);
   });
 
 TVM_STATIC_IR_FUNCTOR_REGISTER(IRPrinter, vtable)
 .set_dispatch<ClosureNode>([](const ClosureNode* node, tvm::IRPrinter* p) {
-    p->stream << "ClosureNode(" << node->func << ")";
+    p->stream << "ClosureNode()";
   });
 
 TupleValue TupleValueNode::make(tvm::Array<Value> value) {
@@ -196,6 +196,8 @@ class Interpreter :
   }
 
   Value VisitExpr_(const FunctionNode* func_node) final {
+    // let f = (v) => eval(extV(x, v, env), body);
+    //     VFun(t, f)
     auto func = GetRef<Function>(func_node);
     tvm::Map<Var, Value> captured_mod;
     Array<Var> free_vars = FreeVars(func);
@@ -203,6 +205,8 @@ class Interpreter :
     for (const auto& var : free_vars) {
       captured_mod.Set(var, Eval(var));
     }
+
+    auto func = [=]
 
     return ClosureNode::make(captured_mod, func);
   }
@@ -333,7 +337,7 @@ class Interpreter :
     // We should not find operators after running fusion,
     // and operator lowering.
     //
-    // We have some functions containing chunks of operators
+    // We have some functions cotaining chunks of operators
     // which will be loaded into operator map.
     if (auto op_node = call->op.as<OpNode>()) {
       LOG(FATAL) << "found " << op_node->name
@@ -431,5 +435,7 @@ TVM_REGISTER_API("relay.backend.CreateInterpreter")
 .set_body([](TVMArgs args, TVMRetValue* ret) {
     *ret = CreateInterpreter(args[0], args[1], args[2]);
   });
+
+}  // namespace jmp
 }  // namespace relay
 }  // namespace tvm

@@ -22,6 +22,7 @@
 
 namespace tvm {
 namespace relay {
+namespace jmp {
 
 /*!
  * \brief A Relay value.
@@ -68,32 +69,17 @@ class Value : public NodeRef {
   using ContainerType = ValueNode;
 };
 
-/*! \brief A Relay closure, i.e a scope and a function. */
+/*! \brief Different closure type to mirror TDPE interpreter implementation. */
 class Closure;
 
 /*! \brief The container type of Closures. */
 class ClosureNode : public ValueNode {
  public:
-  /*! \brief The set of free variables in the closure.
-   *
-   * These are the captured variables which are required for
-   * evaluation when we call the closure.
-   */
-  tvm::Map<Var, Value> env;
-  /*! \brief The function which implements the closure.
-   *
-   * \note May reference the variables contained in the env.
-   */
-  Function func;
+  std::function<Value(Value)> func;
 
   ClosureNode() {}
 
-  void VisitAttrs(tvm::AttrVisitor* v) final {
-    v->Visit("env", &env);
-    v->Visit("func", &func);
-  }
-
-  TVM_DLL static Closure make(tvm::Map<Var, Value> env, Function func);
+  TVM_DLL static Closure make(std::function<Value(Value)> func);
 
   static constexpr const char* _type_key = "relay.Closure";
   TVM_DECLARE_NODE_TYPE_INFO(ClosureNode, ValueNode);
@@ -143,6 +129,7 @@ RELAY_DEFINE_NODE_REF(TensorValue, TensorValueNode, Value);
 runtime::TypedPackedFunc<Value(Closure, tvm::Array<Value>)>
 CreateClosureInvoker(Module mod, DLContext context, Target target);
 
+}  // namespace jmp
 }  // namespace relay
 }  // namespace tvm
 #endif  // TVM_RELAY_INTERPRETER_H_

@@ -304,6 +304,20 @@ def fold_constant(expr):
     """
     return _ir_pass.FoldConstant(expr)
 
+def partial_eval(expr):
+    """Partially evaluate expr.
+
+    Parameters
+    ----------
+    expr : tvm.relay.Expr
+        The input expression.
+
+    Returns
+    -------
+    transformed_expr : tvm.relay.Expr
+        The partially evaluated expression.
+    """
+    return _ir_pass.PartialEval(expr)
 
 def fuse_ops(expr, opt_level=1):
     """Fuse operators in expr together.

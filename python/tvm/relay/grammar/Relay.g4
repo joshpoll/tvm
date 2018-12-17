@@ -83,7 +83,7 @@ expr
 
   | ident                                     # identExpr
   | scalar                                    # scalarExpr
-  // | expr '.' INT                              # project
+  | expr '.' INT                              # project
   // | 'debug'                                   # debug
   ;
 

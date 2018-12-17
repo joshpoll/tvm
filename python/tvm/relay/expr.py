@@ -12,6 +12,10 @@ from .._ffi import base as _base
 from .. import nd as _nd
 from .. import convert
 
+from typing import TypeVar, Deque, Optional, List
+from typing import Tuple as TupleTy
+from enum import Enum, auto
+
 # will be registered afterwards
 _op_make = None
 
@@ -118,6 +122,7 @@ class Constant(Expr):
         The data content of the constant expression.
     """
     def __init__(self, data):
+        super().__init__()
         self.__init_handle_by_constructor__(_make.Constant, data)
 
 
@@ -131,6 +136,7 @@ class Tuple(Expr):
         The fields in the tuple.
     """
     def __init__(self, fields):
+        super().__init__()
         self.__init_handle_by_constructor__(_make.Tuple, fields)
 
     def __getitem__(self, index):
@@ -163,6 +169,7 @@ class Var(Expr):
         The type annotation on the variable.
     """
     def __init__(self, name_hint, type_annotation=None):
+        super().__init__()
         self.__init_handle_by_constructor__(
             _make.Var, name_hint, type_annotation)
 
@@ -186,10 +193,11 @@ class GlobalVar(Expr):
         The name of the variable.
     """
     def __init__(self, name_hint):
+        super().__init__()
         self.__init_handle_by_constructor__(_make.GlobalVar, name_hint)
 
     def __call__(self, *args):
-        """Invoke the gobal function.
+        """Invoke the global function.
 
         Parameters
         ----------
@@ -223,6 +231,7 @@ class Function(Expr):
                  body,
                  ret_type=None,
                  type_params=None):
+        super().__init__()
         if type_params is None:
             type_params = convert([])
 
@@ -263,6 +272,7 @@ class Call(Expr):
         used in advanced usecase of template functions.
     """
     def __init__(self, op, args, attrs=None, type_args=None):
+        super().__init__()
         if not type_args:
             type_args = []
         self.__init_handle_by_constructor__(
@@ -285,6 +295,7 @@ class Let(Expr):
         The body of the let binding.
     """
     def __init__(self, variable, value, body):
+        super().__init__()
         self.__init_handle_by_constructor__(
             _make.Let, variable, value, body)
 
@@ -305,6 +316,7 @@ class If(Expr):
         The expression evaluated when condition is false.
     """
     def __init__(self, cond, true_branch, false_branch):
+        super().__init__()
         self.__init_handle_by_constructor__(
             _make.If, cond, true_branch, false_branch)
 
@@ -322,6 +334,7 @@ class TupleGetItem(Expr):
         The index.
     """
     def __init__(self, tuple_value, index):
+        super().__init__()
         self.__init_handle_by_constructor__(
             _make.TupleGetItem, tuple_value, index)
 
@@ -422,6 +435,9 @@ class ExprMutator(ExprFunctor):
     The default behavior recursively traverses the AST
     and reconstructs the AST.
     """
+    def __init__(self):
+        super().__init__()
+
     def visit_function(self, fn):
         new_body = self.visit(fn.body)
         return Function(
@@ -443,14 +459,11 @@ class ExprMutator(ExprFunctor):
     def visit_var(self, rvar):
         return rvar
 
-    def visit_global_id(self, global_var):
-        return global_var
-
     def visit_if(self, ite):
         return If(
-            self.visit(ite.guard),
-            self.visit(ite.true_b),
-            self.visit(ite.false_b))
+            self.visit(ite.cond),
+            self.visit(ite.true_branch),
+            self.visit(ite.false_branch))
 
     def visit_tuple(self, tup):
         return Tuple([self.visit(field) for field in tup.fields])
@@ -467,6 +480,164 @@ class ExprMutator(ExprFunctor):
     def visit_constant(self, rconst):
         return rconst
 
+K = TypeVar("K")
+V = TypeVar("V")
+Env = Deque[TupleTy[K, V]]
+Envs = Deque[Env[K, V]]
+class ExprEnvFunctor(object):
+    """
+    An abstract visitor defined over Expr.
+
+    Defines the default dispatch over expressions, and
+    implements memoization.
+    """
+    @staticmethod
+    def lookup(envs, key):
+        # type: (Envs[K, V], K) -> Optional[V]
+        """Look up `key` in `envs`. Starts from beginning of the deques."""
+        for env in envs:
+            for key, val in env:
+                if key == var:
+                    return val
+        return None
+
+    # pylint: disable=no-else-return
+    def visit(self, envs, expr):
+        """Apply the visitor to an expression."""
+        if isinstance(expr, Function):
+            res = self.visit_function(envs, expr)
+        elif isinstance(expr, Call):
+            res = self.visit_call(envs, expr)
+        elif isinstance(expr, Let):
+            res = self.visit_let(envs, expr)
+        elif isinstance(expr, Var):
+            res = self.visit_var(envs, expr)
+        elif isinstance(expr, GlobalVar):
+            res = self.visit_global_var(envs, expr)
+        elif isinstance(expr, If):
+            res = self.visit_if(envs, expr)
+        elif isinstance(expr, Tuple):
+            res = self.visit_tuple(envs, expr)
+        elif isinstance(expr, TupleGetItem):
+            res = self.visit_tuple_getitem(envs, expr)
+        elif isinstance(expr, Constant):
+            res = self.visit_constant(envs,expr)
+        else:
+            raise Exception("warning unhandled case: {0}".format(type(expr)))
+
+        return res
+
+    def visit_function(self, _envs, _expr):
+        raise NotImplementedError()
+
+    def visit_let(self, _envs, _expr):
+        raise NotImplementedError()
+
+    def visit_call(self, _envs, _expr):
+        raise NotImplementedError()
+
+    def visit_var(self, _envs, _expr):
+        raise NotImplementedError()
+
+    def visit_type(self, _envs, typ):
+        return typ
+
+    def visit_if(self, _envs, _expr):
+        raise NotImplementedError()
+
+    def visit_tuple(self, _envs, _expr):
+        raise NotImplementedError()
+
+    def visit_tuple_getitem(self, _envs, _expr):
+        raise NotImplementedError()
+
+    def visit_constant(self, _envs, _expr):
+        raise NotImplementedError()
+
+    def visit_global_var(self, _envs, _expr):
+        raise NotImplementedError()
+
+Env2 = List[TupleTy[K, V]]
+class ExprEnvFunctor2(object):
+    """
+    An abstract visitor defined over Expr.
+
+    Defines the default dispatch over expressions, and
+    implements memoization.
+    """
+    @staticmethod
+    def lookup(env, key):
+        # type: (Env2[K, V], K) -> V
+        """Look up `key` in `env`. Starts from beginning of the list."""
+        for k, v in env:
+            if key == k:
+                return v
+        raise Exception(f"{key} not found!")
+
+    @staticmethod
+    def extend(env, key, val):
+        # type: (Env2[K, V], K, V) -> Env2[K, V]
+        """Extend env with key-val pair"""
+        return [(key, val)] + env
+
+    # pylint: disable=no-else-return
+    def visit(self, env, expr):
+        """Apply the visitor to an expression."""
+        if isinstance(expr, Function):
+            res = self.visit_function(env, expr)
+        elif isinstance(expr, Call):
+            res = self.visit_call(env, expr)
+        elif isinstance(expr, Let):
+            res = self.visit_let(env, expr)
+        elif isinstance(expr, Var):
+            res = self.visit_var(env, expr)
+        elif isinstance(expr, GlobalVar):
+            res = self.visit_global_var(env, expr)
+        elif isinstance(expr, If):
+            res = self.visit_if(env, expr)
+        elif isinstance(expr, Tuple):
+            res = self.visit_tuple(env, expr)
+        elif isinstance(expr, TupleGetItem):
+            res = self.visit_tuple_getitem(env, expr)
+        elif isinstance(expr, Constant):
+            res = self.visit_constant(env,expr)
+        else:
+            raise Exception("warning unhandled case: {0}".format(type(expr)))
+
+        return res
+
+    def visit_list(self, env, exprs):
+        return [self.visit(env, expr) for expr in exprs]
+
+    def visit_function(self, _env, _expr):
+        raise NotImplementedError()
+
+    def visit_let(self, _env, _expr):
+        raise NotImplementedError()
+
+    def visit_call(self, _env, _expr):
+        raise NotImplementedError()
+
+    def visit_var(self, _env, _expr):
+        raise NotImplementedError()
+
+    def visit_type(self, _env, typ):
+        return typ
+
+    def visit_if(self, _env, _expr):
+        raise NotImplementedError()
+
+    def visit_tuple(self, _env, _expr):
+        raise NotImplementedError()
+
+    def visit_tuple_getitem(self, _env, _expr):
+        raise NotImplementedError()
+
+    def visit_constant(self, _env, _expr):
+        raise NotImplementedError()
+
+    def visit_global_var(self, _env, _expr):
+        raise NotImplementedError()
 
 class TupleWrapper(object):
     """TupleWrapper.

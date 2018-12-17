@@ -30,7 +30,7 @@ class TypeNode : public RelayNode {
  * Relay's type system contains following two key concepts:
  *
  * - TensorType: type of certain Tensor values in the expression.
- * - FunctionType: the type of the function.
+ * - FuncType: the type of the function.
  *
  * There are also advanced types to support generic(polymorphic types),
  * which can be ignored when first reading the code base.
